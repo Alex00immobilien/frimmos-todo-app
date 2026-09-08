@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#185FA5">
+<title>Frimmos Todo</title>
+<link rel="manifest" href="/manifest.json">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,sans-serif;background:#F1EFE8;color:#2C2C2A;padding:16px}
+.app{max-width:600px;margin:0 auto}
+h1{font-size:22px;font-weight:600;margin-bottom:20px}
+.input-row{display:flex;gap:8px;background:#fff;border:1px solid #B4B2A9;border-radius:12px;padding:10px;margin-bottom:16px}
+.input-row input{flex:1;border:none;outline:none;font-size:16px;background:transparent}
+button{border:1px solid #B4B2A9;border-radius:8px;padding:8px 12px;background:transparent;cursor:pointer;font-size:14px}
+.btn-primary{background:#185FA5;color:#fff;border:none}
+.todo{background:#fff;border:1px solid #B4B2A9;border-radius:12px;padding:12px;margin-bottom:8px;display:flex;align-items:center;gap:12px}
+.todo.done{opacity:0.5}
+.todo.done span{text-decoration:line-through}
+.todo span{flex:1;font-size:15px}
+.del{color:#A32D2D;border:none;background:none;cursor:pointer}
+.mic.on{background:#A32D2D;color:#fff;animation:pulse 1s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.6}}
+</style>
+</head>
+<body>
+<div class="app">
+<h1>Meine Aufgaben</h1>
+<div class="input-row">
+<input id="inp" type="text" placeholder="Neue Aufgabe..." onkeypress="if(event.key==='Enter')add()">
+<button class="mic" id="mic" onclick="voice()">🎤</button>
+<button class="btn-primary" onclick="add()">+</button>
+</div>
+<div id="list"></div>
+</div>
+<script>
+let todos=JSON.parse(localStorage.getItem('todos')||'[]');
+const SR=window.SpeechRecognition||window.webkitSpeechRecognition;
+let rec=null;
+if(SR){rec=new SR();rec.lang='de-DE';rec.onresult=e=>{document.getElementById('inp').value=e.results[0][0].transcript};rec.onstart=()=>document.getElementById('mic').classList.add('on');rec.onend=()=>document.getElementById('mic').classList.remove('on')}
+function voice(){if(rec)rec.start()}
+function save(){localStorage.setItem('todos',JSON.stringify(todos));render()}
+function add(){const v=document.getElementById('inp').value.trim();if(v){todos.unshift({id:Date.now(),text:v,done:false});document.getElementById('inp').value='';save()}}
+function toggle(id){const t=todos.find(t=>t.id===id);if(t)t.done=!t.done;save()}
+function del(id){todos=todos.filter(t=>t.id!==id);save()}
+function render(){document.getElementById('list').innerHTML=todos.map(t=>`<div class="todo ${t.done?'done':''}"><input type="checkbox" ${t.done?'checked':''} onchange="toggle(${t.id})"><span>${t.text}</span><button class="del" onclick="del(${t.id})">🗑</button></div>`).join('')}
+render();
+if('serviceWorker'in navigator)navigator.serviceWorker.register('/sw.js');
+</script>
+</body>
+</html>
